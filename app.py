@@ -6,107 +6,111 @@ import requests
 from streamlit_lottie import st_lottie
 import time
 
-# --- 1. PAGE CONFIGURATION ---
+# --- 1. PAGE CONFIG ---
 st.set_page_config(
     page_title="Deepfake AI image DEDECTION (VISTAS)", 
     page_icon="🛡️", 
     layout="wide"
 )
 
-# --- 2. THE BARCODE/LASER SCANNER CSS ---
-# This adds a moving laser line over the image area
+# --- 2. CSS FOR SCANNER & RESULTS ---
 st.markdown("""
     <style>
     .scan-container {
         position: relative;
         overflow: hidden;
+        border: 3px solid #00f2fe;
         border-radius: 15px;
-        border: 2px solid #00f2fe;
+        box-shadow: 0 0 20px rgba(0, 242, 254, 0.5);
     }
-    .laser-line {
+    .laser {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: linear-gradient(to bottom, transparent, #00f2fe, transparent);
-        box-shadow: 0 0 15px 5px rgba(0, 242, 254, 0.7);
+        top: 0; left: 0; width: 100%; height: 5px;
+        background: rgba(0, 242, 254, 0.8);
+        box-shadow: 0 0 15px 5px #00f2fe;
         z-index: 10;
-        animation: scan 2s linear infinite;
+        animation: scanning 2s linear infinite;
     }
-    @keyframes scan {
+    @keyframes scanning {
         0% { top: 0%; }
         50% { top: 100%; }
         100% { top: 0%; }
     }
     .result-card {
-        padding: 25px;
-        border-radius: 20px;
+        padding: 20px;
+        border-radius: 15px;
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 242, 254, 0.3);
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. LOTTIE ASSETS ---
+# --- 3. ANIMATION LOADER ---
 def load_lottieurl(url: str):
     try:
         r = requests.get(url, timeout=5)
         return r.json() if r.status_code == 200 else None
-    except:
-        return None
+    except: return None
 
-lottie_ai_scan = load_lottieurl("https://lottie.host/80a0302b-a633-4621-8868-b7161b96d911/lWvE5pXp7m.json") # QR/Barcode style
+# Specific Cyber/Forensic Animations
 lottie_main = load_lottieurl("https://lottie.host/9e0004f8-18e3-46c9-8356-027c62b2e85a/Osh08f4uU7.json")
+lottie_success = load_lottieurl("https://lottie.host/362955f1-3316-430c-9975-9c9892183955/qQ6xX1q0XU.json") # Smooth Checkmark
+lottie_fake = load_lottieurl("https://lottie.host/e660e737-2936-499b-9860-23429304387a/7f0iSNoA4m.json") # Alert/Warning
 
 # --- 4. SIDEBAR ---
 with st.sidebar:
-    if lottie_main:
-        st_lottie(lottie_main, height=180, key="side_anim")
+    if lottie_main: st_lottie(lottie_main, height=180, key="side_ai")
     st.title("🛡️ VISTAS Lab")
-    st.info("MobileNetV2 Neural Architecture")
+    st.write("Deep Learning Engine v4.0")
     st.divider()
-    st.write("2026 BCA Project")
 
 # --- 5. MAIN UI ---
 st.title("🛡️ Deepfake AI image DEDECTION (VISTAS)")
+st.write("---")
 
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    uploaded_file = st.file_uploader("📂 Drop image to scan...", type=["jpg", "png", "jpeg"])
-    if not uploaded_file and lottie_ai_scan:
-        st_lottie(lottie_ai_scan, height=350, key="idle_scan")
+    uploaded_file = st.file_uploader("📂 Upload Evidence Image", type=["jpg", "png", "jpeg"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
     with col2:
-        # We use a container to apply the "Laser Scan" CSS
-        st.markdown('<div class="scan-container"><div class="laser-line"></div>', unsafe_allow_html=True)
+        # Visual Laser Scan Container
+        st.markdown('<div class="scan-container"><div class="laser"></div>', unsafe_allow_html=True)
         st.image(image, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
-        if st.button("🔍 SCAN FOR MANIPULATION"):
-            with st.spinner("Decoding facial noise..."):
-                time.sleep(2) # Visual pause for effect
+        if st.button("🔍 INITIATE FORENSIC SCAN"):
+            with st.status("🔍 Analyzing pixels and noise patterns...") as status:
+                time.sleep(2) # Simulated analysis time
                 
-                # --- PREDICTION ---
                 try:
+                    # Model Inference
                     model = tf.keras.models.load_model('models/deepfake_detector.h5')
-                    img = image.resize((224, 224))
-                    img_array = np.array(img) / 255.0
-                    img_batch = img_array[np.newaxis, ...]
+                    img_ready = np.array(image.resize((224, 224))) / 255.0
+                    pred = model.predict(img_ready[np.newaxis, ...])[0][0]
+                    status.update(label="✅ Analysis Complete", state="complete")
+
+                    # Animated Results Section
+                    st.write("### Forensic Conclusion")
+                    res_col, anim_col = st.columns([2, 1])
                     
-                    prediction = model.predict(img_batch)[0][0]
+                    with res_col:
+                        st.markdown('<div class="result-card">', unsafe_allow_html=True)
+                        if pred > 0.5:
+                            st.success(f"**AUTHENTIC**")
+                            st.write(f"Confidence: {pred*100:.2f}%")
+                            st.balloons()
+                        else:
+                            st.error(f"**FAKE / MANIPULATED**")
+                            st.write(f"Alert Level: {(1-pred)*100:.2f}%")
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
-                    # --- RESULTS ---
-                    st.markdown('<div class="result-card">', unsafe_allow_html=True)
-                    if prediction > 0.5:
-                        st.balloons()
-                        st.success(f"✅ **AUTHENTIC** ({prediction*100:.2f}%)")
-                    else:
-                        st.error(f"🚨 **FAKE DETECTED** ({(1-prediction)*100:.2f}%)")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    with anim_col:
+                        if pred > 0.5: st_lottie(lottie_success, height=150)
+                        else: st_lottie(lottie_fake, height=150)
+                        
                 except Exception as e:
                     st.error(f"Error: {e}")
