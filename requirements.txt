@@ -1,4 +1,6 @@
-tensorflow-cpu
 streamlit
-pillow
+tensorflow-cpu
+Pillow
 numpy
+streamlit-lottie
+requests
